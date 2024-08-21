@@ -1,63 +1,114 @@
-const body = document.body
+const nav = document.querySelector(".nav");
+const navMenu = document.querySelector(".nav-items");
+const btnToggleNav = document.querySelector(".menu-btn");
+const workEls = document.querySelectorAll(".work-box");
+const workImgs = document.querySelectorAll(".work-img");
+const mainEl = document.querySelector("main");
+const yearEl = document.querySelector(".footer-text span");
 
-const btnTheme = document.querySelector('.fa-moon')
-const btnHamburger = document.querySelector('.fa-bars')
+const toggleNav = () => {
+  nav.classList.toggle("hidden");
 
-const addThemeClass = (bodyClass, btnClass) => {
-  body.classList.add(bodyClass)
-  btnTheme.classList.add(btnClass)
-}
+  // Prevent screen from scrolling when menu is opened
+  document.body.classList.toggle("lock-screen");
 
-const getBodyTheme = localStorage.getItem('portfolio-theme')
-const getBtnTheme = localStorage.getItem('portfolio-btn-theme')
+  if (nav.classList.contains("hidden")) {
+    btnToggleNav.textContent = "menu";
+  } else {
+    // When menu is opened after transition change text respectively
+    setTimeout(() => {
+      btnToggleNav.textContent = "close";
+    }, 475);
+  }
+};
 
-addThemeClass(getBodyTheme, getBtnTheme)
+btnToggleNav.addEventListener("click", toggleNav);
 
-const isDark = () => body.classList.contains('dark')
+navMenu.addEventListener("click", (e) => {
+  if (e.target.localName === "a") {
+    toggleNav();
+  }
+});
 
-const setTheme = (bodyClass, btnClass) => {
+document.body.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !nav.classList.contains("hidden")) {
+    toggleNav();
+  }
+});
 
-	body.classList.remove(localStorage.getItem('portfolio-theme'))
-	btnTheme.classList.remove(localStorage.getItem('portfolio-btn-theme'))
+// Animating work instances on scroll
 
-  addThemeClass(bodyClass, btnClass)
+workImgs.forEach((workImg) => workImg.classList.add("transform"));
 
-	localStorage.setItem('portfolio-theme', bodyClass)
-	localStorage.setItem('portfolio-btn-theme', btnClass)
-}
+let observer = new IntersectionObserver(
+  (entries) => {
+    const [entry] = entries;
+    const [textbox, picture] = Array.from(entry.target.children);
+    if (entry.isIntersecting) {
+      picture.classList.remove("transform");
+      Array.from(textbox.children).forEach(
+        (el) => (el.style.animationPlayState = "running")
+      );
+    }
+  },
+  { threshold: 0.3 }
+);
 
-const toggleTheme = () =>
-	isDark() ? setTheme('light', 'fa-moon') : setTheme('dark', 'fa-sun')
+workEls.forEach((workEl) => {
+  observer.observe(workEl);
+});
 
-btnTheme.addEventListener('click', toggleTheme)
+// Toggle theme and store user preferred theme for future
 
-const displayList = () => {
-	const navUl = document.querySelector('.nav__list')
+const switchThemeEl = document.querySelector('input[type="checkbox"]');
+const storedTheme = localStorage.getItem("theme");
 
-	if (btnHamburger.classList.contains('fa-bars')) {
-		btnHamburger.classList.remove('fa-bars')
-		btnHamburger.classList.add('fa-times')
-		navUl.classList.add('display-nav-list')
-	} else {
-		btnHamburger.classList.remove('fa-times')
-		btnHamburger.classList.add('fa-bars')
-		navUl.classList.remove('display-nav-list')
-	}
-}
+switchThemeEl.checked = storedTheme === "dark" || storedTheme === null;
 
-btnHamburger.addEventListener('click', displayList)
+switchThemeEl.addEventListener("click", () => {
+  const isChecked = switchThemeEl.checked;
 
-const scrollUp = () => {
-	const btnScrollTop = document.querySelector('.scroll-top')
+  if (!isChecked) {
+    document.body.classList.remove("dark");
+    document.body.classList.add("light");
+    localStorage.setItem("theme", "light");
+    switchThemeEl.checked = false;
+  } else {
+    document.body.classList.add("dark");
+    document.body.classList.remove("light");
+    localStorage.setItem("theme", "dark");
+  }
+});
 
-	if (
-		body.scrollTop > 500 ||
-		document.documentElement.scrollTop > 500
-	) {
-		btnScrollTop.style.display = 'block'
-	} else {
-		btnScrollTop.style.display = 'none'
-	}
-}
+// Trap the tab when menu is opened
 
-document.addEventListener('scroll', scrollUp)
+const lastFocusedEl = document.querySelector('a[data-focused="last-focused"]');
+
+document.body.addEventListener("keydown", (e) => {
+  if (e.key === "Tab" && document.activeElement === lastFocusedEl) {
+    e.preventDefault();
+    btnToggleNav.focus();
+  }
+});
+
+// Rotating logos animation
+
+const logosWrappers = document.querySelectorAll(".logo-group");
+
+const sleep = (number) => new Promise((res) => setTimeout(res, number));
+
+logosWrappers.forEach(async (logoWrapper, i) => {
+  const logos = Array.from(logoWrapper.children);
+  await sleep(1400 * i);
+  setInterval(() => {
+    let temp = logos[0];
+    logos[0] = logos[1];
+    logos[1] = logos[2];
+    logos[2] = temp;
+    logos[0].classList.add("hide", "to-top");
+    logos[1].classList.remove("hide", "to-top", "to-bottom");
+    logos[2].classList.add("hide", "to-bottom");
+  }, 5600);
+});
+
+yearEl.textContent = new Date().getFullYear();
